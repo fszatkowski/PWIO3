@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.Group?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane maxHeight="720.0" maxWidth="1190.0" minHeight="720.0" minWidth="1080.0" prefHeight="720.0" prefWidth="1380.0" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.Controller">
+   <children>
+      <Label layoutX="150.0" layoutY="125.0" prefWidth="150.0" text="Właściwości białka" AnchorPane.leftAnchor="150.0" AnchorPane.topAnchor="125.0" />
+      <Group AnchorPane.leftAnchor="30.0" AnchorPane.topAnchor="155.0">
+         <children>
+            <Group layoutX="-494.0" layoutY="158.0">
+               <children>
+                  <Label fx:id="geneName" layoutX="530.0" layoutY="120.0" prefHeight="17.0" prefWidth="169.0" text="Nazwa genu" />
+               </children>
+            </Group>
+            <Group layoutX="-494.0" layoutY="236.0" />
+            <Group layoutX="-494.0" layoutY="195.0">
+               <children>
+                  <Label fx:id="Sekwencja" layoutX="530.0" layoutY="120.0" prefHeight="17.0" prefWidth="164.0" text="Sekwencja" />
+               </children>
+            </Group>
+            <Group layoutX="-494.0" layoutY="81.0">
+               <children>
+                  <Label fx:id="proteinName" layoutX="530.0" layoutY="120.0" prefHeight="17.0" prefWidth="170.0" text="Nazwa białaka" />
+               </children>
+            </Group>
+            <Group layoutX="-494.0" layoutY="3.0">
+               <children>
+                  <Label layoutX="530.0" layoutY="120.0" prefHeight="17.0" prefWidth="170.0" text="Identyfikator" />
+               </children>
+            </Group>
+            <Group layoutX="-494.0" layoutY="120.0">
+               <children>
+                  <Label fx:id="organismName" layoutX="530.0" layoutY="120.0" prefHeight="17.0" prefWidth="170.0" text="Nazwa organizmu" />
+               </children>
+            </Group>
+            <Group layoutX="-494.0" layoutY="43.0">
+               <children>
+                  <Label layoutX="530.0" layoutY="120.0" prefHeight="17.0" prefWidth="173.0" text="Nazwa rekordu" />
+               </children>
+            </Group>
+            <TextField fx:id="gene" layoutX="217.0" layoutY="274.0" prefWidth="180.0" />
+            <TextField fx:id="organism" layoutX="217.0" layoutY="237.0" prefWidth="180.0" />
+            <TextField fx:id="protein" layoutX="217.0" layoutY="197.0" prefWidth="180.0" />
+            <TextField fx:id="entry" layoutX="217.0" layoutY="159.0" prefHeight="25.0" prefWidth="180.0" />
+            <TextField fx:id="identifier" layoutX="217.0" layoutY="119.0" prefWidth="180.0" />
+         </children>
+      </Group>
+      <Button fx:id="searchButton" layoutX="115.0" layoutY="434.0" mnemonicParsing="false" onAction="#search" prefHeight="25.0" prefWidth="200.0" text="Wyszukaj" AnchorPane.leftAnchor="115.0" AnchorPane.topAnchor="434.0" />
+      <Group AnchorPane.bottomAnchor="30.0" AnchorPane.rightAnchor="30.0">
+         <children>
+            <Label layoutX="649.0" layoutY="103.0" prefHeight="20.0" prefWidth="150.0" text="Wyniki wyszukiwania" />
+            <TableView fx:id="resultsTable" layoutX="678.0" layoutY="135.0" prefHeight="630.0" prefWidth="628.0" AnchorPane.bottomAnchor="-103.0" AnchorPane.rightAnchor="-678.0" />
+         </children>
+      </Group>
+      <TextField fx:id="filePath" alignment="TOP_LEFT" layoutX="30.0" layoutY="81.0" prefHeight="26.0" prefWidth="323.0" AnchorPane.leftAnchor="30.0" AnchorPane.topAnchor="75.0" />
+      <Button fx:id="loadButton" layoutX="365.0" layoutY="75.0" mnemonicParsing="false" onAction="#loadFile" prefHeight="25.0" prefWidth="25.0" text="..." AnchorPane.leftAnchor="365.0" AnchorPane.topAnchor="75.0" />
+      <Group AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="30.0" />
+      <Group AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="30.0">
+         <children>
+            <Group layoutX="-469.0" layoutY="320.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="30.0">
+               <children>
+                  <TableView fx:id="measurementsTable" layoutX="515.0" layoutY="175.0" prefHeight="189.0" prefWidth="385.0" />
+               </children>
+            </Group>
+         </children>
+      </Group>
+      <Label layoutX="150.0" layoutY="49.0" prefHeight="25.0" prefWidth="130.0" text="Załaduj plik FASTA" AnchorPane.leftAnchor="150.0" AnchorPane.topAnchor="49.0" />
+      <TextArea fx:id="sequence" layoutX="213.0" layoutY="345.0" prefHeight="72.0" prefWidth="180.0" />
+      <Label layoutX="95.0" layoutY="470.0" prefHeight="25.0" prefWidth="240.0" text="Wielkość pliku i czas wyszukiwania" />
+   </children>
+</AnchorPane>
