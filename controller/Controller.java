@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -47,40 +48,38 @@ public class Controller {
 	@FXML
 	private Button saveButton;
 	@FXML
-	private TableView<FileUtils> measurementsTable;
+	private TableView<Result> measurementsTable;
 	@FXML
 	private TextField savePath;
 
 	private String fastaPath = "";
 	private Long fileLength = null;
-	private final ObservableList<FileUtils> resultTimes = FXCollections.observableArrayList();
+	private final ObservableList<Result> resultTimes = FXCollections.observableArrayList();
 	private final ObservableList<FastaRecord> fastaRecords = FXCollections.observableArrayList();
 	private HashMap<String, String> params;
 	private FileUtils fileUtils;
-	ArrayList<FileUtils> resultFiles = new ArrayList<FileUtils>();
+	ArrayList<Result> resultFiles = new ArrayList<Result>();
+
+	private int repeatNum = 100;
 
 	@FXML
 	public void initialize() {
 		// measurments table setup
 		measurementsTable.setEditable(true);
 
-		TableColumn<FileUtils, String> fileNameCol = new TableColumn<FileUtils, String>("Nazwa");
+		TableColumn<Result, String> fileNameCol = new TableColumn<Result, String>("Nazwa");
 		fileNameCol.setPrefWidth(100);
-		fileNameCol.setCellValueFactory(new PropertyValueFactory<FileUtils, String>("filePath"));
+		fileNameCol.setCellValueFactory(new PropertyValueFactory<Result, String>("name"));
 
-		TableColumn<FileUtils, String> fileMethodCol = new TableColumn<FileUtils, String>("Metoda");
+		TableColumn<Result, String> fileMethodCol = new TableColumn<Result, String>("Metoda");
 		fileMethodCol.setPrefWidth(100);
-		fileMethodCol.setCellValueFactory(new PropertyValueFactory<FileUtils, String>("fileMethod"));
+		fileMethodCol.setCellValueFactory(new PropertyValueFactory<Result, String>("method"));
 
-		TableColumn<FileUtils, String> fileSizeCol = new TableColumn<FileUtils, String>("Rozmiar");
-		fileSizeCol.setPrefWidth(100);
-		fileSizeCol.setCellValueFactory(new PropertyValueFactory<FileUtils, String>("fileSize"));
-
-		TableColumn<FileUtils, String> timeCol = new TableColumn<FileUtils, String>("Czas");
+		TableColumn<Result, String> timeCol = new TableColumn<Result, String>("Czas");
 		timeCol.setPrefWidth(100);
-		timeCol.setCellValueFactory(new PropertyValueFactory<FileUtils, String>("fileTime"));
+		timeCol.setCellValueFactory(new PropertyValueFactory<Result, String>("time"));
 
-		measurementsTable.getColumns().addAll(fileNameCol, fileMethodCol, fileSizeCol, timeCol);
+		measurementsTable.getColumns().addAll(fileNameCol, fileMethodCol, timeCol);
 		measurementsTable.setItems(resultTimes);
 
 		// results table setup
@@ -131,25 +130,51 @@ public class Controller {
 			setParams();
 			fileUtils.loadFile();
 
-			// parallelStream method
-			fileUtils.searchForRecordsWithParallelStrem(params);
-			FileUtils file = new FileUtils(fileUtils);
-			resultFiles.add(file);
-
+			int l;
+			Result result;
+			FileUtils file;
+			ArrayList<FastaRecord> resultRecords;
 			// stream method
-			fileUtils.searchForRecordsWithStream(params);
-			ArrayList<FastaRecord> resultRecords = fileUtils.getResults();
-			file = new FileUtils(fileUtils);
-			resultFiles.add(file);
+			fileUtils.clearResultTimes();
+			for (l = 0; l < repeatNum; l++) {
+				fileUtils.searchForRecordsWithStream(params);
+			}
+			System.out.println("Avarge time stream(): " + getAverage());
+			resultFiles.add(new Result(fileUtils.getFilePath(), "stream()", getAverage().toString()));
 
 			// classic method with for loop
-			fileUtils.searchForRecords(params);
-			file = new FileUtils(fileUtils);
-			resultFiles.add(file);
+			fileUtils.clearResultTimes();
+			for (l = 0; l < repeatNum; l++) {
+				fileUtils.searchForRecords(params);
+			}
+			System.out.println("Avarge time for loop: " + getAverage());
+			resultFiles.add(new Result(fileUtils.getFilePath(), "for loop", getAverage().toString()));
 
-			updateRecordsTable(resultRecords);
+			// parallelStream method
+			fileUtils.clearResultTimes();
+			for (l = 0; l < repeatNum; l++) {
+				fileUtils.searchForRecordsWithParallelStrem(params);
+			}
+			System.out.println("Avarge time parallelStream(): " + getAverage());
+			resultFiles.add(new Result(fileUtils.getFilePath(), "parallelStream()", getAverage().toString()));
+
+			resultRecords = fileUtils.getResults();
 			updateFilesTable(resultFiles);
+			updateRecordsTable(resultRecords);
+
 		}
+	}
+
+	public Long getAverage() {
+
+		Long avg;
+		long sum = 0;
+		for (Long time : fileUtils.getResultTimes()) {
+			sum += time;
+		}
+		avg = sum / repeatNum;
+
+		return avg;
 	}
 
 	@FXML
@@ -159,7 +184,7 @@ public class Controller {
 		java.io.File selectedFile = fileChooser.showOpenDialog(stage);
 		fastaPath = selectedFile.getAbsolutePath();
 		fileLength = selectedFile.length();
-		fileUtils = new FileUtils(fastaPath, null, new Long(fileLength), null);
+		fileUtils = new FileUtils(fastaPath);
 
 		if (!fileUtils.ifFastaExtension()) {
 			Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -183,9 +208,9 @@ public class Controller {
 		resultsTable.setItems(fastaRecords);
 	}
 
-	private void updateFilesTable(ArrayList<FileUtils> resultFiles) {
+	private void updateFilesTable(ArrayList<Result> resultFiles) {
 
-		for (FileUtils file : resultFiles) {
+		for (Result file : resultFiles) {
 
 			resultTimes.add(file);
 		}
@@ -211,6 +236,43 @@ public class Controller {
 		fastaRecords.clear();
 		resultsTable.getItems().clear();
 		resultTimes.clear();
+	}
+
+	public class Result {
+
+		private SimpleStringProperty time;
+		private SimpleStringProperty method;
+		private SimpleStringProperty name;
+
+		public Result(String name, String method, String time) {
+			this.name = new SimpleStringProperty(name);
+			this.method = new SimpleStringProperty(method);
+			this.time = new SimpleStringProperty(time);
+		}
+
+		public String getName() {
+			return name.get();
+		}
+
+		public void setName(String name) {
+			this.name.set(name);
+		}
+
+		public String getTime() {
+			return time.get();
+		}
+
+		public void setTime(String time) {
+			this.time.set(time);
+		}
+
+		public String getMethod() {
+			return method.get();
+		}
+
+		public void setMethod(String method) {
+			this.method.set(method);
+		}
 	}
 
 }

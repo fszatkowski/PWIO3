@@ -11,46 +11,45 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 
 public class FileUtils {
 
 	private SimpleStringProperty filePath;
-	private SimpleLongProperty fileSize;
-	private SimpleLongProperty fileTime;
-	private SimpleStringProperty fileMethod;
 
-	private List fastaRecords;
+	private ArrayList<FastaRecord> fastaRecords;
 	private RandomAccessFile raf = null;
 	private File fastaFile;
 	private BufferedReader reader;
-	private ArrayList results = new ArrayList<FastaRecord>();
+	private ArrayList<FastaRecord> results = new ArrayList<FastaRecord>();
 
-	public ArrayList getResults() {
-		return results;
+	private ArrayList resultsList = new ArrayList<ArrayList>();
+
+	private ArrayList<Long> resultTimes = new ArrayList<Long>();
+
+	public ArrayList<Long> getResultTimes() {
+		return resultTimes;
 	}
 
-	public FileUtils(String filePath, String fileMethod, Long fileSize, Long fileTime) throws FileNotFoundException {
-		this.filePath = new SimpleStringProperty(filePath);
-		this.fileMethod = new SimpleStringProperty(fileMethod);
-		if (fileSize != null)
-			this.fileSize = new SimpleLongProperty(fileSize);
-		if (fileTime != null)
-			this.fileTime = new SimpleLongProperty(fileTime);
+	public void clearResultTimes() {
+		resultTimes.clear();
+	}
 
+	public void setResultTimes(ArrayList<Long> resultTimes) {
+		this.resultTimes = resultTimes;
+	}
+
+	public ArrayList<FastaRecord> getResults() {
+		return fastaRecords;
+	}
+
+	public FileUtils(String filePath) throws FileNotFoundException {
+		this.filePath = new SimpleStringProperty(filePath);
 		raf = new RandomAccessFile(filePath, "rw");
 	}
 
 	public FileUtils(FileUtils fileUtils) throws FileNotFoundException {
 		this.filePath = new SimpleStringProperty(fileUtils.getFilePath());
-		this.fileMethod = new SimpleStringProperty(fileUtils.getFileMethod());
-		this.fileSize = new SimpleLongProperty(fileUtils.getFileSize());
-		this.fileTime = new SimpleLongProperty(fileUtils.getFileTime());
-	}
-
-	public String getFileMethod() {
-		return fileMethod.get();
 	}
 
 	public String getFilePath() {
@@ -61,22 +60,6 @@ public class FileUtils {
 		this.filePath.set(filePath);
 	}
 
-	public Long getFileSize() {
-		return fileSize.get();
-	}
-
-	public void setFileSize(Long fileSize) {
-		this.fileSize.set(fileSize);
-	}
-
-	public Long getFileTime() {
-		return fileTime.get();
-	}
-
-	public void setFileTime(Long fileTime) {
-		this.fileTime.set(fileTime);
-	}
-
 	public boolean ifFastaExtension() {
 		int lastIndexOf = filePath.get().lastIndexOf(".");
 		if (lastIndexOf == -1) {
@@ -85,7 +68,7 @@ public class FileUtils {
 		return filePath.get().substring(lastIndexOf).equals(".fasta");
 	}
 
-	public ArrayList<FastaRecord> loadFile() throws IOException {
+	public ArrayList<ArrayList> loadFile() throws IOException {
 
 		fastaRecords = new ArrayList<FastaRecord>();
 		FastaRecord record = new FastaRecord();
@@ -110,60 +93,74 @@ public class FileUtils {
 			recordStr.append("\n\r");
 		}
 		this.closeInputFile();
-		return (ArrayList<FastaRecord>) fastaRecords;
+
+		// dziele liste na polowe
+		int num = fastaRecords.size();
+		List<FastaRecord> head = fastaRecords.subList(0, num / 2);
+		List<FastaRecord> tail = fastaRecords.subList(num / 2, num);
+
+		resultsList.add(head);
+		resultsList.add(tail);
+
+		System.out.println("Number of records: " + num);
+
+		return (ArrayList<ArrayList>) resultsList;
 	}
 
 	public void searchForRecordsWithParallelStrem(HashMap<String, String> params) {
 
 		results.clear();
 		long startTime = System.currentTimeMillis();
-		fastaRecords.parallelStream().forEach(i -> ifMatch(i, params));
+		resultsList.parallelStream().forEach(i -> ifMatch(i, params));
 		long endTime = System.currentTimeMillis();
-		this.fileTime = new SimpleLongProperty(endTime - startTime);
-		System.out.println("parallelStream() time: " + fileTime);
+		Long fileTime = new Long(endTime - startTime);
 
-		this.fileMethod = new SimpleStringProperty("parallelStream()");
+		resultTimes.add(fileTime);
 	}
 
 	public void searchForRecordsWithStream(HashMap<String, String> params) {
 
 		results.clear();
 		long startTime = System.currentTimeMillis();
-		fastaRecords.stream().forEach(i -> ifMatch(i, params));
+		resultsList.stream().forEach(i -> ifMatch(i, params));
 		long endTime = System.currentTimeMillis();
-		this.fileTime = new SimpleLongProperty(endTime - startTime);
-		System.out.println("stream() time: " + fileTime);
+		Long fileTime = new Long(endTime - startTime);
 
-		this.fileMethod = new SimpleStringProperty("stream()");
+		resultTimes.add(fileTime);
 	}
 
 	public void searchForRecords(HashMap<String, String> params) {
 
 		results.clear();
 		long startTime = System.currentTimeMillis();
-		for (Object record : fastaRecords) {
-			ifMatch(record, params);
-		}
+		ifMatch(fastaRecords, params);
 		long endTime = System.currentTimeMillis();
-		this.fileTime = new SimpleLongProperty(endTime - startTime);
-		System.out.println("for loop time: " + fileTime);
+		Long fileTime = new Long(endTime - startTime);
 
-		this.fileMethod = new SimpleStringProperty("for loop");
+		resultTimes.add(fileTime);
 	}
 
-	public void ifMatch(Object record, HashMap<String, String> params) {
+	public void ifMatch(Object i, HashMap<String, String> params) {
 
-		if (!((FastaRecord) record).getId().contains(params.get("identifier")))
-			return;
-		if (!((FastaRecord) record).getEntry().contains(params.get("entry")))
-			return;
-		if (!((FastaRecord) record).getProtein().contains(params.get("protein")))
-			return;
-		if (!((FastaRecord) record).getOrganism().contains(params.get("organism")))
-			return;
-		if (!((FastaRecord) record).getGene().contains(params.get("gene")))
-			return;
-		this.results.add(record);
+		// // convert Object to ArrayList<FastarRecord>
+		HashMap<String, Object> hashMap = new HashMap<String, Object>();
+		hashMap.put("records", i);
+		List<FastaRecord> records = (List<FastaRecord>) hashMap.get("records");
+		FastaRecord[] recordsList = records.toArray(new FastaRecord[records.size()]);
+
+		for (FastaRecord record : recordsList) {
+			if (!((FastaRecord) record).getId().contains(params.get("identifier")))
+				break;
+			if (!((FastaRecord) record).getEntry().contains(params.get("entry")))
+				break;
+			if (!((FastaRecord) record).getProtein().contains(params.get("protein")))
+				break;
+			if (!((FastaRecord) record).getOrganism().contains(params.get("organism")))
+				break;
+			if (!((FastaRecord) record).getGene().contains(params.get("gene")))
+				break;
+			this.results.add(record);
+		}
 	}
 
 	public static String getLineSeparator(String srcPath) throws IOException {
